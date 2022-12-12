@@ -2,6 +2,8 @@ package com.swein.recyclerviewitemslidetoshowmenu
 
 import android.content.Context
 import android.graphics.Canvas
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
@@ -17,6 +19,7 @@ fun setItemTouchHelper(context: Context, recyclerView: RecyclerView, adapter: Ad
         private var initXWhenInActive = 0f
         private var firstInActive = false
         var leftSwipeChecker = false
+        private var handler = Handler(Looper.getMainLooper())
 
         override fun getMovementFlags(
             recyclerView: RecyclerView,
@@ -102,20 +105,37 @@ fun setItemTouchHelper(context: Context, recyclerView: RecyclerView, adapter: Ad
             recyclerView: RecyclerView
         ) {
 
-            viewHolder.itemView.setOnClickListener {
-                viewHolder.itemView.scrollTo(0, 0)
-            }
+            for (i in adapter.list.size downTo 0) {
+                val itemView = recyclerView.findViewHolderForAdapterPosition(i)?.itemView
 
-            var i = 0
-            var otherItemView: View?
-
-            while (i < adapter.list.size) {
                 if (i != viewHolder.adapterPosition) {
-                    otherItemView = recyclerView.findViewHolderForAdapterPosition(i)?.itemView
-                    otherItemView?.scrollTo(0, 0)
+                    itemView?.scrollTo(0, 0)
                 }
-                i++
+
+                itemView?.setOnClickListener {
+                    recoverItemAnim(itemView)
+                }
             }
+        }
+
+        private fun recoverItemAnim(itemView: View?) {
+            itemView?.scrollTo(0, 0)
+
+            handler.postDelayed({
+                itemView?.scrollTo(20, 0)
+            }, 100)
+
+            handler.postDelayed({
+                itemView?.scrollTo(0, 0)
+            }, 200)
+
+            handler.postDelayed({
+                itemView?.scrollTo(10, 0)
+            }, 300)
+
+            handler.postDelayed({
+                itemView?.scrollTo(0, 0)
+            }, 400)
         }
 
         override fun clearView(
