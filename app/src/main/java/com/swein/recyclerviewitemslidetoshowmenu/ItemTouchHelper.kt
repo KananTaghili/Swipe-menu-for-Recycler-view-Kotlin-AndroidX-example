@@ -1,0 +1,141 @@
+package com.swein.recyclerviewitemslidetoshowmenu
+
+import android.content.Context
+import android.graphics.Canvas
+import android.view.View
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
+import com.swein.recyclerviewitemslidetoshowmenu.adapter.Adapter
+
+fun setItemTouchHelper(context: Context, recyclerView: RecyclerView, adapter: Adapter) {
+
+    ItemTouchHelper(object : ItemTouchHelper.Callback() {
+
+        private val limitScrollX = dipToPx(context)
+        private var currentScrollX = 0
+        private var currentScrollXWhenInActive = 0
+        private var initXWhenInActive = 0f
+        private var firstInActive = false
+        var leftSwipeChecker = false
+
+        override fun getMovementFlags(
+            recyclerView: RecyclerView,
+            viewHolder: RecyclerView.ViewHolder
+        ): Int {
+            val dragFlags = 0
+            val swipeFlags = ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+            return makeMovementFlags(dragFlags, swipeFlags)
+        }
+
+        override fun onMove(
+            recyclerView: RecyclerView,
+            viewHolder: RecyclerView.ViewHolder,
+            target: RecyclerView.ViewHolder
+        ): Boolean {
+            return true
+        }
+
+        override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+
+        override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float {
+            return Integer.MAX_VALUE.toFloat()
+        }
+
+        override fun getSwipeEscapeVelocity(defaultValue: Float): Float {
+            return Integer.MAX_VALUE.toFloat()
+        }
+
+        override fun onChildDraw(
+            c: Canvas,
+            recyclerView: RecyclerView,
+            viewHolder: RecyclerView.ViewHolder,
+            dX: Float,
+            dY: Float,
+            actionState: Int,
+            isCurrentlyActive: Boolean
+        ) {
+
+            if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+
+                if (viewHolder.itemView.scrollX == 0) {
+                    leftSwipeChecker = true
+                }
+
+                leftSwipeChecker = leftSwipeChecker && dX < 0
+
+                if (leftSwipeChecker) {
+                    recoverSwipedItem(viewHolder, recyclerView)
+                }
+
+                if (dX == 0f) {
+                    currentScrollX = viewHolder.itemView.scrollX
+                    firstInActive = true
+                }
+
+                if (isCurrentlyActive) {
+                    var scrollOffset = currentScrollX + (-dX).toInt()
+                    if (scrollOffset > limitScrollX) {
+                        scrollOffset = limitScrollX
+                    } else if (scrollOffset < 0) {
+                        scrollOffset = 0
+                    }
+                    viewHolder.itemView.scrollTo(scrollOffset, 0)
+                } else {
+                    if (firstInActive) {
+                        firstInActive = false
+                        currentScrollXWhenInActive = viewHolder.itemView.scrollX
+                        initXWhenInActive = dX
+                    }
+
+                    if (viewHolder.itemView.scrollX < limitScrollX) {
+                        viewHolder.itemView.scrollTo(
+                            (currentScrollXWhenInActive * dX / initXWhenInActive).toInt(),
+                            0
+                        )
+                    }
+                }
+            }
+        }
+
+        private fun recoverSwipedItem(
+            viewHolder: RecyclerView.ViewHolder,
+            recyclerView: RecyclerView
+        ) {
+
+            viewHolder.itemView.setOnClickListener {
+                viewHolder.itemView.scrollTo(0, 0)
+            }
+
+            var i = 0
+            var otherItemView: View?
+
+            while (i < adapter.list.size) {
+                if (i != viewHolder.adapterPosition) {
+                    otherItemView = recyclerView.findViewHolderForAdapterPosition(i)?.itemView
+                    otherItemView?.scrollTo(0, 0)
+                }
+                i++
+            }
+        }
+
+        override fun clearView(
+            recyclerView: RecyclerView,
+            viewHolder: RecyclerView.ViewHolder
+        ) {
+            super.clearView(recyclerView, viewHolder)
+
+            if (viewHolder.itemView.scrollX > limitScrollX) {
+                viewHolder.itemView.scrollTo(limitScrollX, 0)
+            } else if (viewHolder.itemView.scrollX < 0) {
+                viewHolder.itemView.scrollTo(0, 0)
+            }
+        }
+
+    }).apply {
+        attachToRecyclerView(recyclerView)
+    }
+}
+
+private fun dipToPx(context: Context): Int {
+    return (100f * context.resources.displayMetrics.density).toInt()
+}
