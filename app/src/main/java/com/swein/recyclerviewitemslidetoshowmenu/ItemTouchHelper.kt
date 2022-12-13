@@ -68,6 +68,9 @@ fun setItemTouchHelper(context: Context, recyclerView: RecyclerView, adapter: Ad
 
                 if (leftSwipeChecker) {
                     recoverSwipedItem(viewHolder, recyclerView)
+                    if (viewHolder.itemView.scrollX != 0) {
+                        leftSwipeChecker = false
+                    }
                 }
 
                 if (dX == 0f) {
@@ -109,7 +112,12 @@ fun setItemTouchHelper(context: Context, recyclerView: RecyclerView, adapter: Ad
                 val itemView = recyclerView.findViewHolderForAdapterPosition(i)?.itemView
 
                 if (i != viewHolder.adapterPosition) {
-                    itemView?.scrollTo(0, 0)
+
+                    itemView?.let {
+                        if (it.scrollX > 0) {
+                            recoverItemAnim(itemView)
+                        }
+                    }
                 }
 
                 itemView?.setOnClickListener {
@@ -123,19 +131,19 @@ fun setItemTouchHelper(context: Context, recyclerView: RecyclerView, adapter: Ad
 
             handler.postDelayed({
                 itemView?.scrollTo(20, 0)
+            }, 50)
+
+            handler.postDelayed({
+                itemView?.scrollTo(0, 0)
             }, 100)
 
             handler.postDelayed({
-                itemView?.scrollTo(0, 0)
+                itemView?.scrollTo(10, 0)
             }, 200)
 
             handler.postDelayed({
-                itemView?.scrollTo(10, 0)
-            }, 300)
-
-            handler.postDelayed({
                 itemView?.scrollTo(0, 0)
-            }, 400)
+            }, 300)
         }
 
         override fun clearView(
